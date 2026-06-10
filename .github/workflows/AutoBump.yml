@@ -69,4 +69,8 @@ jobs:
           git tag "v${V}"
           git push origin HEAD
           git push origin "v${V}"
-          gh workflow run Release.yml --ref main --field version="${V}"
+          for attempt in 1 2 3; do
+            gh workflow run Release.yml --ref main --field version="${V}" && break
+            echo "dispatch attempt ${attempt} failed; retrying in 10s..."
+            sleep 10
+          done
