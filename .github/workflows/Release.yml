@@ -1,0 +1,106 @@
+name: Release
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+
+permissions:
+  contents: write
+
+jobs:
+  build-paper:
+    name: Build paper
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: xu-cheng/latex-action@v4
+        with:
+          root_file: main.tex
+          latexmk_use_lualatex: true
+          pre_compile: mkdir -p out
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: paper
+          path: out/main.pdf
+
+  build-diff:
+    name: Build latexdiff PDF
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Find previous tag
+        id: tags
+        run: |
+          PREV=$(git tag --sort=-v:refname | grep -v "^${GITHUB_REF_NAME}$" | head -1)
+          echo "prev=${PREV}" >> "$GITHUB_OUTPUT"
+
+      - name: Extract previous main.tex
+        if: steps.tags.outputs.prev != ''
+        run: git show "${{ steps.tags.outputs.prev }}":main.tex > prev_main.tex
+
+      - name: Compile latexdiff
+        if: steps.tags.outputs.prev != ''
+        uses: xu-cheng/latex-action@v4
+        with:
+          root_file: diff.tex
+          latexmk_use_lualatex: true
+          pre_compile: |
+            mkdir -p out
+            latexdiff prev_main.tex main.tex > diff.tex
+
+      - uses: actions/upload-artifact@v7
+        if: steps.tags.outputs.prev != ''
+        with:
+          name: diff
+          path: out/diff.pdf
+
+  build-supplementary:
+    name: Build supplementary
+    runs-on: ubuntu-latest
+    if: hashFiles('supplemental.tex') != ''
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: xu-cheng/latex-action@v4
+        with:
+          root_file: supplemental.tex
+          latexmk_use_lualatex: true
+          pre_compile: mkdir -p out
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: supplementary
+          path: out/supplemental.pdf
+
+  release:
+    name: GitHub Release
+    needs: [build-paper, build-diff, build-supplementary]
+    runs-on: ubuntu-latest
+    if: |
+      always() &&
+      needs.build-paper.result == 'success' &&
+      (needs.build-diff.result == 'success' || needs.build-diff.result == 'skipped') &&
+      (needs.build-supplementary.result == 'success' || needs.build-supplementary.result == 'skipped')
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: artifacts/
+          merge-multiple: true
+
+      - name: Stamp version into filenames
+        run: |
+          V="${GITHUB_REF_NAME}"
+          cd artifacts
+          [ -f main.pdf ]         && mv main.pdf         "paper-${V}.pdf"
+          [ -f diff.pdf ]         && mv diff.pdf         "diff-${V}.pdf"
+          [ -f supplemental.pdf ] && mv supplemental.pdf "supplemental-${V}.pdf"
+
+      - uses: softprops/action-gh-release@v3
+        with:
+          files: artifacts/*.pdf
+          generate_release_notes: true
