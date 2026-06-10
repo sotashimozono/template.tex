@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.ver.outputs.tag }}
+      has-supplemental: ${{ steps.check.outputs.has-supplemental }}
     steps:
       - uses: actions/checkout@v6
 
@@ -37,6 +38,15 @@ jobs:
           if [ "$TAG" != "$EXPECTED" ]; then
             echo "ERROR: tag '${TAG}' does not match VERSION ('${EXPECTED}')"
             exit 1
+          fi
+
+      - name: Check for supplemental.tex
+        id: check
+        run: |
+          if [ -f supplemental.tex ]; then
+            echo "has-supplemental=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-supplemental=false" >> "$GITHUB_OUTPUT"
           fi
 
   build-paper:
@@ -109,7 +119,7 @@ jobs:
     name: Build supplementary
     needs: [setup]
     runs-on: ubuntu-latest
-    if: hashFiles('supplemental.tex') != ''
+    if: needs.setup.outputs.has-supplemental == 'true'
     steps:
       - uses: actions/checkout@v6
 
@@ -128,12 +138,7 @@ jobs:
     name: GitHub Release
     needs: [setup, build-paper, build-diff, build-supplementary]
     runs-on: ubuntu-latest
-    if: |
-      always() &&
-      needs.setup.result == 'success' &&
-      needs.build-paper.result == 'success' &&
-      (needs.build-diff.result == 'success' || needs.build-diff.result == 'skipped') &&
-      (needs.build-supplementary.result == 'success' || needs.build-supplementary.result == 'skipped')
+    if: always() && needs.setup.result == 'success' && needs.build-paper.result == 'success' && needs.build-diff.result != 'cancelled' && (needs.build-supplementary.result == 'success' || needs.build-supplementary.result == 'skipped')
     steps:
       - uses: actions/download-artifact@v8
         with:
