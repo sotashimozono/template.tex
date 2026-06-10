@@ -69,8 +69,10 @@ PRs without a keyword are merged without triggering a release.
 
 ### Manual release
 
+From the Actions tab, run **Release** with the target version (without `v`):
+
 ```sh
-git tag v1.0.0 && git push origin v1.0.0
+gh workflow run Release.yml --field version=1.0.0
 ```
 
 The pipeline builds in parallel and attaches to the GitHub Release:
