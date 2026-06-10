@@ -67,5 +67,6 @@ jobs:
           git add VERSION
           git commit -m "chore: bump version to ${V} [skip ci]"
           git tag "v${V}"
-          git push origin HEAD --follow-tags
+          git push origin HEAD
+          git push origin "v${V}"
           gh workflow run Release.yml --ref main --field version="${V}"
