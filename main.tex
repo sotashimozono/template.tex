@@ -1,0 +1,78 @@
+%!LW recipe = lualatex
+
+\documentclass[twocolumn, prb, amsmath, amssymb, superscriptaddress]{revtex4-2}
+
+% ---- Mathematics -------------------------------------------------------------
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{bm}       % bold math: \bm{}
+\usepackage{braket}   % Dirac notation: \ket{} \bra{} \braket{}
+
+% ---- Figures -----------------------------------------------------------------
+\usepackage{graphicx}   % no driver needed — LuaLaTeX outputs PDF natively
+\graphicspath{{figures/}}
+
+% ---- Hyperlinks --------------------------------------------------------------
+\usepackage[colorlinks=true, citecolor=blue, linkcolor=blue,
+            filecolor=blue, urlcolor=blue]{hyperref}
+
+% ---- Revision markup (comment out before final submission) -------------------
+\usepackage{xcolor}
+\usepackage{ulem}
+\newcommand{\sh}[1]{{\color{green}{#1}}}   % author edit
+\newcommand{\ch}[1]{{\color{blue}{#1}}}    % collaborator edit
+\newcommand{\remove}[1]{\sout{#1}}         % deletion
+\newcommand{\rev}[1]{{\color{red}{#1}}}    % response to reviewer
+
+% ==============================================================================
+\begin{document}
+% ==============================================================================
+
+\title{Title}
+
+\author{First Author}
+\email{author@example.com}
+\author{Second Author}
+\affiliation{Department, University, City, Country}
+
+\date{\today}
+
+\begin{abstract}
+  Abstract.
+\end{abstract}
+
+\maketitle
+
+% ==============================================================================
+\section{Introduction}
+\label{sec:introduction}
+% ==============================================================================
+
+
+% ==============================================================================
+\section{Model and Methods}
+\label{sec:model}
+% ==============================================================================
+
+
+% ==============================================================================
+\section{Results}
+\label{sec:results}
+% ==============================================================================
+
+
+% ==============================================================================
+\section{Summary}
+\label{sec:summary}
+% ==============================================================================
+
+
+% ==============================================================================
+\begin{acknowledgments}
+  Acknowledgments.
+\end{acknowledgments}
+
+\bibliography{references}
+
+\end{document}
