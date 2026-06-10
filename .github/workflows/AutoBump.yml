@@ -1,11 +1,10 @@
 name: Auto Version Bump
 
-# Bump VERSION and push a semver tag when a PR merged to main contains
-# [patch], [minor], or [major] in its title or body.
+# Bump VERSION and trigger the release pipeline when a PR merged to main
+# contains [patch], [minor], or [major] in its title or body.
 #
-# Requires a repository secret `PAT` (Personal Access Token with repo write
-# scope). The default GITHUB_TOKEN cannot push tags that trigger other
-# workflows — the PAT is necessary for Release.yml to fire automatically.
+# No PAT required: tag push uses GITHUB_TOKEN, and Release.yml is triggered
+# via workflow_dispatch (the one event GITHUB_TOKEN CAN fire cross-workflow).
 
 on:
   pull_request:
@@ -23,7 +22,6 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          token: ${{ secrets.PAT }}
 
       - name: Detect bump type
         id: bump
@@ -57,8 +55,10 @@ jobs:
           echo "$NEW" > VERSION
           echo "new=${NEW}" >> "$GITHUB_OUTPUT"
 
-      - name: Commit, tag, and push
+      - name: Commit, tag, and dispatch release
         if: steps.bump.outputs.type != 'none'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           V="${{ steps.version.outputs.new }}"
           git config user.name "github-actions[bot]"
@@ -67,3 +67,4 @@ jobs:
           git commit -m "chore: bump version to ${V} [skip ci]"
           git tag "v${V}"
           git push origin HEAD --follow-tags
+          gh workflow run Release.yml --ref main --field version="${V}"

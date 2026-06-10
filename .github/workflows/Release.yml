@@ -3,27 +3,45 @@ name: Release
 on:
   push:
     tags: ["v[0-9]*.[0-9]*.[0-9]*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version without 'v' prefix (e.g. 1.2.3)"
+        required: true
 
 permissions:
   contents: write
 
 jobs:
-  verify-version:
-    name: Verify tag matches VERSION
+  setup:
+    name: Resolve version and verify
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.ver.outputs.tag }}
     steps:
       - uses: actions/checkout@v6
-      - name: Check tag == v$(cat VERSION)
+
+      - name: Resolve tag
+        id: ver
         run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=v${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check tag matches VERSION
+        run: |
+          TAG="${{ steps.ver.outputs.tag }}"
           EXPECTED="v$(cat VERSION)"
-          if [ "${GITHUB_REF_NAME}" != "${EXPECTED}" ]; then
-            echo "ERROR: tag '${GITHUB_REF_NAME}' does not match VERSION ('${EXPECTED}')"
+          if [ "$TAG" != "$EXPECTED" ]; then
+            echo "ERROR: tag '${TAG}' does not match VERSION ('${EXPECTED}')"
             exit 1
           fi
 
   build-paper:
     name: Build paper
-    needs: [verify-version]
+    needs: [setup]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -53,7 +71,7 @@ jobs:
 
   build-diff:
     name: Build latexdiff PDF
-    needs: [verify-version]
+    needs: [setup]
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
@@ -64,7 +82,7 @@ jobs:
       - name: Find previous tag
         id: tags
         run: |
-          PREV=$(git tag --sort=-v:refname | grep -v "^${GITHUB_REF_NAME}$" | head -1)
+          PREV=$(git tag --sort=-v:refname | grep -v "^${{ needs.setup.outputs.tag }}$" | head -1)
           echo "prev=${PREV}" >> "$GITHUB_OUTPUT"
 
       - name: Extract previous main.tex
@@ -89,7 +107,7 @@ jobs:
 
   build-supplementary:
     name: Build supplementary
-    needs: [verify-version]
+    needs: [setup]
     runs-on: ubuntu-latest
     if: hashFiles('supplemental.tex') != ''
     steps:
@@ -108,11 +126,11 @@ jobs:
 
   release:
     name: GitHub Release
-    needs: [verify-version, build-paper, build-diff, build-supplementary]
+    needs: [setup, build-paper, build-diff, build-supplementary]
     runs-on: ubuntu-latest
     if: |
       always() &&
-      needs.verify-version.result == 'success' &&
+      needs.setup.result == 'success' &&
       needs.build-paper.result == 'success' &&
       (needs.build-diff.result == 'success' || needs.build-diff.result == 'skipped') &&
       (needs.build-supplementary.result == 'success' || needs.build-supplementary.result == 'skipped')
@@ -123,14 +141,15 @@ jobs:
 
       - name: Prepare release assets
         run: |
-          V="${GITHUB_REF_NAME}"
+          V="${{ needs.setup.outputs.tag }}"
           mkdir release
-          [ -f dl/paper/main.pdf ]                     && mv dl/paper/main.pdf                     "release/paper-${V}.pdf"
-          [ -f dl/diff/diff.pdf ]                      && mv dl/diff/diff.pdf                      "release/diff-${V}.pdf"
-          [ -f dl/supplementary/supplemental.pdf ]     && mv dl/supplementary/supplemental.pdf     "release/supplemental-${V}.pdf"
-          [ -d dl/arxiv-src ]                          && (cd dl/arxiv-src && zip "../../release/arxiv-bundle-${V}.zip" ./*)
+          [ -f dl/paper/main.pdf ]                 && mv dl/paper/main.pdf                 "release/paper-${V}.pdf"
+          [ -f dl/diff/diff.pdf ]                  && mv dl/diff/diff.pdf                  "release/diff-${V}.pdf"
+          [ -f dl/supplementary/supplemental.pdf ] && mv dl/supplementary/supplemental.pdf "release/supplemental-${V}.pdf"
+          [ -d dl/arxiv-src ]                      && (cd dl/arxiv-src && zip "../../release/arxiv-bundle-${V}.zip" ./*)
 
       - uses: softprops/action-gh-release@v3
         with:
+          tag_name: ${{ needs.setup.outputs.tag }}
           files: release/*
           generate_release_notes: true

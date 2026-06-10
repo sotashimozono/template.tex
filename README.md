@@ -67,13 +67,6 @@ Add `[patch]`, `[minor]`, or `[major]` anywhere in a PR title or body. When the 
 
 PRs without a keyword are merged without triggering a release.
 
-### Setup: PAT secret
-
-`AutoBump.yml` needs a Personal Access Token to push tags that trigger `Release.yml` (the default `GITHUB_TOKEN` cannot do this).
-
-1. Create a PAT with **Contents: Read and write** scope at GitHub → Settings → Developer settings → Personal access tokens
-2. Add it as a repository secret named `PAT` at Settings → Secrets → Actions
-
 ### Manual release
 
 ```sh
