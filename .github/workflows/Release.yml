@@ -8,8 +8,22 @@ permissions:
   contents: write
 
 jobs:
+  verify-version:
+    name: Verify tag matches VERSION
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check tag == v$(cat VERSION)
+        run: |
+          EXPECTED="v$(cat VERSION)"
+          if [ "${GITHUB_REF_NAME}" != "${EXPECTED}" ]; then
+            echo "ERROR: tag '${GITHUB_REF_NAME}' does not match VERSION ('${EXPECTED}')"
+            exit 1
+          fi
+
   build-paper:
     name: Build paper
+    needs: [verify-version]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -39,6 +53,7 @@ jobs:
 
   build-diff:
     name: Build latexdiff PDF
+    needs: [verify-version]
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
@@ -74,6 +89,7 @@ jobs:
 
   build-supplementary:
     name: Build supplementary
+    needs: [verify-version]
     runs-on: ubuntu-latest
     if: hashFiles('supplemental.tex') != ''
     steps:
@@ -92,10 +108,11 @@ jobs:
 
   release:
     name: GitHub Release
-    needs: [build-paper, build-diff, build-supplementary]
+    needs: [verify-version, build-paper, build-diff, build-supplementary]
     runs-on: ubuntu-latest
     if: |
       always() &&
+      needs.verify-version.result == 'success' &&
       needs.build-paper.result == 'success' &&
       (needs.build-diff.result == 'success' || needs.build-diff.result == 'skipped') &&
       (needs.build-supplementary.result == 'success' || needs.build-supplementary.result == 'skipped')

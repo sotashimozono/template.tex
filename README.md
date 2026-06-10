@@ -51,9 +51,30 @@ Four commands are defined in `main.tex` for tracking changes during review:
 
 Comment out the `xcolor`/`ulem` block before final submission.
 
-## Release workflow
+## Versioning
 
-Tag a commit with a semantic version to trigger the release pipeline:
+The current version is stored in `VERSION` (e.g. `1.2.0`). The git tag `v{VERSION}` is the release identifier. `Release.yml` verifies they match before building.
+
+### Auto-bump on PR merge
+
+Add `[patch]`, `[minor]`, or `[major]` anywhere in a PR title or body. When the PR is merged to `main`, `AutoBump.yml` increments `VERSION`, commits it, creates the tag, and pushes — triggering the full release pipeline automatically.
+
+| Keyword | Example: 1.2.3 → |
+|---|---|
+| `[patch]` | 1.2.4 |
+| `[minor]` | 1.3.0 |
+| `[major]` | 2.0.0 |
+
+PRs without a keyword are merged without triggering a release.
+
+### Setup: PAT secret
+
+`AutoBump.yml` needs a Personal Access Token to push tags that trigger `Release.yml` (the default `GITHUB_TOKEN` cannot do this).
+
+1. Create a PAT with **Contents: Read and write** scope at GitHub → Settings → Developer settings → Personal access tokens
+2. Add it as a repository secret named `PAT` at Settings → Secrets → Actions
+
+### Manual release
 
 ```sh
 git tag v1.0.0 && git push origin v1.0.0

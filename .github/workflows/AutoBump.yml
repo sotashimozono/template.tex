@@ -1,0 +1,69 @@
+name: Auto Version Bump
+
+# Bump VERSION and push a semver tag when a PR merged to main contains
+# [patch], [minor], or [major] in its title or body.
+#
+# Requires a repository secret `PAT` (Personal Access Token with repo write
+# scope). The default GITHUB_TOKEN cannot push tags that trigger other
+# workflows — the PAT is necessary for Release.yml to fire automatically.
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PAT }}
+
+      - name: Detect bump type
+        id: bump
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          COMBINED="${PR_TITLE} ${PR_BODY}"
+          if echo "$COMBINED" | grep -qiE '\[major\]'; then
+            echo "type=major" >> "$GITHUB_OUTPUT"
+          elif echo "$COMBINED" | grep -qiE '\[minor\]'; then
+            echo "type=minor" >> "$GITHUB_OUTPUT"
+          elif echo "$COMBINED" | grep -qiE '\[patch\]'; then
+            echo "type=patch" >> "$GITHUB_OUTPUT"
+          else
+            echo "type=none" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump VERSION file
+        if: steps.bump.outputs.type != 'none'
+        id: version
+        run: |
+          TYPE="${{ steps.bump.outputs.type }}"
+          IFS='.' read -r MAJOR MINOR PATCH < VERSION
+          case "$TYPE" in
+            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH + 1)) ;;
+          esac
+          NEW="${MAJOR}.${MINOR}.${PATCH}"
+          echo "$NEW" > VERSION
+          echo "new=${NEW}" >> "$GITHUB_OUTPUT"
+
+      - name: Commit, tag, and push
+        if: steps.bump.outputs.type != 'none'
+        run: |
+          V="${{ steps.version.outputs.new }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add VERSION
+          git commit -m "chore: bump version to ${V} [skip ci]"
+          git tag "v${V}"
+          git push origin HEAD --follow-tags
