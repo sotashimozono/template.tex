@@ -1,0 +1,50 @@
+name: Initialize from template
+
+# Runs once in a repository generated from this template (via "Use this
+# template"). It resets VERSION to the starting 0.1.0 and then deletes itself
+# so it never runs again.
+#
+# Guard: github.event.repository.is_template is true ONLY in the template repo
+# itself, so this job is skipped there and runs only in generated repos. The
+# self-deletion is the second safety net — after the first push the workflow
+# file is gone, so it cannot re-trigger.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  init:
+    name: Reset version to 0.1.0
+    # Skip in the template repo; run only in repos created from it.
+    # Two guards: is_template flag, and an explicit slug exclusion as a backstop.
+    if: ${{ github.event.repository.is_template == false && github.repository != 'sotashimozono/template.tex' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Initialize VERSION and remove this workflow
+        run: |
+          set -euo pipefail
+          # Already initialized (workflow somehow ran twice)? Nothing to do.
+          if [ ! -f .github/workflows/Initialize.yml ]; then
+            echo "Initialize.yml already removed — skipping."
+            exit 0
+          fi
+
+          echo "0.1.0" > VERSION
+          rm .github/workflows/Initialize.yml
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add VERSION .github/workflows/Initialize.yml
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          # [skip ci] so this bootstrap commit does not kick off the LaTeX/release pipelines.
+          git commit -m "chore: initialize from template (version 0.1.0) [skip ci]"
+          git push origin HEAD

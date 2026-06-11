@@ -1,22 +1,25 @@
 %!LW recipe = lualatex
 
-\documentclass[twocolumn, prb, amsmath, amssymb, superscriptaddress]{revtex4-2}
+\documentclass[twocolumn,prb]{revtex4-2}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%% Preamble %%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
 % ---- Mathematics -------------------------------------------------------------
 \usepackage{amsmath}
-\usepackage{amssymb}
 \usepackage{amsfonts}
-\usepackage{bm}       % bold math: \bm{}
-\usepackage{braket}   % Dirac notation: \ket{} \bra{} \braket{}
-
-% ---- Figures -----------------------------------------------------------------
-\usepackage{graphicx}   % no driver needed — LuaLaTeX outputs PDF natively
-\graphicspath{{figures/}}
-
+\usepackage{amssymb}
+\usepackage{bm}
+\usepackage{braket}
+%
 % ---- Hyperlinks --------------------------------------------------------------
-\usepackage[colorlinks=true, citecolor=blue, linkcolor=blue,
-            filecolor=blue, urlcolor=blue]{hyperref}
-
+\usepackage[colorlinks=true,citecolor=blue,linkcolor=blue,filecolor=blue,urlcolor=blue]{hyperref} % hyperlink with color
+%
+% ---- Graphics ----------------------------------------------------------------
+\usepackage{graphicx} % figure (luatex driver, auto-detected under LuaLaTeX)
+\graphicspath{{figures/}}
+%
 % ---- Revision markup (comment out before final submission) -------------------
 \usepackage{xcolor}
 \usepackage[normalem]{ulem}
@@ -29,46 +32,66 @@
 \begin{document}
 % ==============================================================================
 
-\title{Title}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%% title and authors information %%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{template.tex}
 
 \author{First Author}
 \email{author@example.com}
 \author{Second Author}
+\email{second@example.com}
 \affiliation{Department, University, City, Country}
 
 \date{\today}
 
 \begin{abstract}
-  Abstract.
+  Abstract. This template is a LaTeX template for writing scientific papers.
+  In this template, github actions for compiling papers and semantic versioning or other features are included.
+  Everytime you push changes to the repository with bump version file, releases are automatically created with `main.pdf', `supplementary.pdf', `diff.pdf'.
 \end{abstract}
 
 \maketitle
 
-% ==============================================================================
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%% Introduction %%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
 \label{sec:introduction}
-% ==============================================================================
+Introduction section, this is a cite example\cite{example2024}.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%% Formulation %%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Formulation}
+\label{sec:Formulation}
+Formulation section.
 
-% ==============================================================================
-\section{Model and Methods}
-\label{sec:model}
-% ==============================================================================
-
-
-% ==============================================================================
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%% Results %%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results}
 \label{sec:results}
-% ==============================================================================
+Results section.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%% Summary %%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Discussion}
+\label{sec:discussion}
+Discussion section.
 
-% ==============================================================================
-\section{Summary}
-\label{sec:summary}
-% ==============================================================================
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%% Conclusion %%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conclusion}
+\label{sec:conclusion}
+Conclusion section.
 
-
-% ==============================================================================
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%% Acknowledgments %%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{acknowledgments}
   Acknowledgments.
 \end{acknowledgments}
