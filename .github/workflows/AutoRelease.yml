@@ -1,0 +1,44 @@
+name: Auto Release
+
+# After a PR merges to main, if the current VERSION has no matching tag yet,
+# dispatch Release.yml for it. VERSION is bumped by hand in the PR and gated
+# by VersionCheck.yml, so a new tag here means the merged PR raised the version.
+#
+# No PAT required: Release.yml is triggered via workflow_dispatch, the one
+# event GITHUB_TOKEN can fire cross-workflow. Release.yml creates/pushes the tag.
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  release:
+    if: github.event.pull_request.merged == true
+    name: Tag and release if VERSION is new
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Dispatch release for new VERSION
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V="$(cat VERSION)"
+          if ! echo "$V" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "VERSION '$V' is not in X.Y.Z form; skipping."
+            exit 0
+          fi
+
+          TAG="v${V}"
+          if git ls-remote --tags origin "refs/tags/${TAG}" | grep -q "${TAG}"; then
+            echo "Tag ${TAG} already exists — VERSION was not bumped. No release."
+            exit 0
+          fi
+
+          echo "New version ${V} detected — dispatching Release.yml."
+          gh workflow run Release.yml --ref main --field version="${V}"

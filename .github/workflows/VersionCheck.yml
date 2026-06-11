@@ -1,0 +1,68 @@
+name: Version Check
+
+# On every PR to main, if VERSION changed it must be a clean single-step
+# semantic-versioning bump (X.Y.Z -> a valid major/minor/patch increment).
+# A PR that does NOT touch VERSION passes — version bumps are optional, and
+# only a bumped VERSION triggers a release on merge (see AutoRelease.yml).
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Validate semver bump
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Compare VERSION against base branch
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          SEMVER='^[0-9]+\.[0-9]+\.[0-9]+$'
+
+          HEAD_VER="$(cat VERSION)"
+          if ! echo "$HEAD_VER" | grep -qE "$SEMVER"; then
+            echo "::error::VERSION '$HEAD_VER' is not in X.Y.Z form"
+            exit 1
+          fi
+
+          git fetch origin "$BASE_REF" --depth=1
+          BASE_VER="$(git show "FETCH_HEAD:VERSION" 2>/dev/null || echo "")"
+
+          if [ -z "$BASE_VER" ]; then
+            echo "No VERSION on base branch — treating '$HEAD_VER' as initial. OK."
+            exit 0
+          fi
+          if ! echo "$BASE_VER" | grep -qE "$SEMVER"; then
+            echo "::error::base VERSION '$BASE_VER' is not in X.Y.Z form"
+            exit 1
+          fi
+
+          if [ "$HEAD_VER" = "$BASE_VER" ]; then
+            echo "VERSION unchanged ($HEAD_VER). No release will fire on merge. OK."
+            exit 0
+          fi
+
+          IFS=. read -r bM bm bp <<< "$BASE_VER"
+          IFS=. read -r hM hm hp <<< "$HEAD_VER"
+
+          if   [ "$hM" -eq "$((bM + 1))" ] && [ "$hm" -eq 0 ]            && [ "$hp" -eq 0 ]; then
+            KIND=major
+          elif [ "$hM" -eq "$bM" ]         && [ "$hm" -eq "$((bm + 1))" ] && [ "$hp" -eq 0 ]; then
+            KIND=minor
+          elif [ "$hM" -eq "$bM" ]         && [ "$hm" -eq "$bm" ]         && [ "$hp" -eq "$((bp + 1))" ]; then
+            KIND=patch
+          else
+            echo "::error::VERSION must be a single-step semver bump from ${BASE_VER}."
+            echo "::error::Allowed next values: $((bM + 1)).0.0 (major), ${bM}.$((bm + 1)).0 (minor), ${bM}.${bm}.$((bp + 1)) (patch). Got '${HEAD_VER}'."
+            exit 1
+          fi
+
+          echo "Valid ${KIND} bump: ${BASE_VER} -> ${HEAD_VER}. Release will fire on merge."
