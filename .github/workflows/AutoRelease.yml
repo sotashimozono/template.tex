@@ -22,7 +22,7 @@ jobs:
     name: Tag and release if VERSION is new
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Dispatch release for new VERSION
         env:

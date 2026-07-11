@@ -24,7 +24,7 @@ jobs:
       tag: ${{ steps.ver.outputs.tag }}
       has-supplemental: ${{ steps.check.outputs.has-supplemental }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Resolve tag
         id: ver
@@ -71,7 +71,7 @@ jobs:
     needs: [setup]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: xu-cheng/latex-action@v4
         with:
@@ -102,7 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -138,7 +138,7 @@ jobs:
     runs-on: ubuntu-latest
     if: needs.setup.outputs.has-supplemental == 'true'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: xu-cheng/latex-action@v4
         with:
